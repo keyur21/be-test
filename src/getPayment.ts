@@ -1,18 +1,17 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { buildResponse } from "./lib/apigateway";
-import { getPayment } from "./lib/payments";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+import { buildResponse } from './lib/apigateway';
+import { getPayment } from './lib/payments';
+
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const paymentId = event.pathParameters?.id;
 
     if (!paymentId) {
-      console.warn("Payment ID missing in the GetPayment request");
+      console.warn('Payment ID missing in the GetPayment request');
       return buildResponse(400, {
-        error: "Bad Request",
-        message: "Payment ID not provided",
+        error: 'Bad Request',
+        message: 'Payment ID not provided',
       });
     }
 
@@ -24,7 +23,7 @@ export const handler = async (
       console.warn(`Payment not found for ID: ${paymentId}`);
 
       return buildResponse(404, {
-        error: "Not Found",
+        error: 'Not Found',
         message: `Payment not found for ID: ${paymentId}`,
       });
     }
@@ -33,11 +32,11 @@ export const handler = async (
 
     return buildResponse(200, payment);
   } catch (err) {
-    console.error(`Error retrieving payment: ${err}`);
+    console.error('Error retrieving payment:', err);
 
     return buildResponse(500, {
-      error: "Internal Server Error",
-      message: "An error occurred while retrieving payment.",
+      error: 'Internal Server Error',
+      message: 'An error occurred while retrieving payment.',
     });
   }
 };
