@@ -13,12 +13,23 @@ export const getPayment = async (paymentId: string): Promise<Payment | null> => 
   return (result.Item as Payment) || null;
 };
 
-export const listPayments = async (): Promise<Payment[]> => {
-  const result = await DocumentClient.send(
-    new ScanCommand({
-      TableName: 'Payments',
-    })
-  );
+export const listPayments = async (currency?: string): Promise<Payment[]> => {
+  const scanParams: {
+    TableName: string;
+    FilterExpression?: string;
+    ExpressionAttributeNames?: Record<string, string>;
+    ExpressionAttributeValues?: Record<string, string>;
+  } = {
+    TableName: 'Payments',
+  };
+
+  if (currency) {
+    scanParams.FilterExpression = '#currency = :currency';
+    scanParams.ExpressionAttributeNames = { '#currency': 'currency' };
+    scanParams.ExpressionAttributeValues = { ':currency': currency };
+  }
+
+  const result = await DocumentClient.send(new ScanCommand(scanParams));
 
   return (result.Items as Payment[]) || [];
 };
