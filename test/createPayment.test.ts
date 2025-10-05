@@ -76,7 +76,7 @@ describe('When the user creates a new payment', () => {
     expect(getPaymentMock).toHaveBeenCalledWith('test-uuid-12345');
   });
 
-  it('Returns 400 when amount is missing', async () => {
+  it('Returns 422 when amount is missing', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
@@ -85,16 +85,15 @@ describe('When the user creates a new payment', () => {
       }),
     } as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
-    expect(body.message).toContain('Amount');
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('Amount is required');
 
-    // Should not call createPayment
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
 
-  it('Returns 400 when amount is not a number', async () => {
+  it('Returns 422 when amount is not a number', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
@@ -104,15 +103,67 @@ describe('When the user creates a new payment', () => {
       }),
     } as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('Amount must be a number');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when amount is zero', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: JSON.stringify({
+        amount: 0,
+        currency: 'USD',
+      }),
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('greater than zero');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when amount is negative', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: JSON.stringify({
+        amount: -100,
+        currency: 'USD',
+      }),
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('greater than zero');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when amount is not finite (NaN)', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: '{"amount": NaN, "currency": "USD"}',
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    // NaN will be parsed as undefined/null, so it will fail the "required" check
     expect(body.message).toContain('Amount');
 
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
 
-  it('Returns 400 when currency is missing', async () => {
+  it('Returns 422 when currency is missing', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
@@ -121,15 +172,15 @@ describe('When the user creates a new payment', () => {
       }),
     } as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
-    expect(body.message).toContain('Currency');
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('Currency is required');
 
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
 
-  it('Returns 400 when currency is not a string', async () => {
+  it('Returns 422 when currency is not a string', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
@@ -139,38 +190,92 @@ describe('When the user creates a new payment', () => {
       }),
     } as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
-    expect(body.message).toContain('Currency');
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('Currency must be a string');
 
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
 
-  it('Returns 400 when body is empty', async () => {
+  it('Returns 422 when currency format is invalid (lowercase)', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: JSON.stringify({
+        amount: 1000,
+        currency: 'usd',
+      }),
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('3-letter uppercase ISO code');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when currency format is invalid (too short)', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: JSON.stringify({
+        amount: 1000,
+        currency: 'US',
+      }),
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('3-letter uppercase ISO code');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when currency is not supported', async () => {
+    const createPaymentMock = jest.spyOn(payments, 'createPayment');
+
+    const result = await handler({
+      body: JSON.stringify({
+        amount: 1000,
+        currency: 'XYZ',
+      }),
+    } as APIGatewayProxyEvent);
+
+    expect(result.statusCode).toBe(422);
+    const body = JSON.parse(result.body) as Record<string, unknown>;
+    expect(body.error).toBe('Unprocessable Entity');
+    expect(body.message).toContain('not supported');
+
+    expect(createPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('Returns 422 when body is empty', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
       body: '',
     } as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
+    expect(body.error).toBe('Unprocessable Entity');
 
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
 
-  it('Returns 400 when body is null', async () => {
+  it('Returns 422 when body is null', async () => {
     const createPaymentMock = jest.spyOn(payments, 'createPayment');
 
     const result = await handler({
       body: null,
     } as unknown as APIGatewayProxyEvent);
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(422);
     const body = JSON.parse(result.body) as Record<string, unknown>;
-    expect(body.error).toBe('Bad Request');
+    expect(body.error).toBe('Unprocessable Entity');
 
     expect(createPaymentMock).not.toHaveBeenCalled();
   });
