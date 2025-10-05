@@ -33,7 +33,12 @@ export const createPayment = async (payment: Payment) => {
 };
 
 export type Payment = {
-  id: string;
+  paymentId: string; // this should be paymentId as per be-test-stack.ts's partition key
+  amount: number;
+  currency: string;
+};
+
+export type CreatePaymentPayload = {
   amount: number;
   currency: string;
 };

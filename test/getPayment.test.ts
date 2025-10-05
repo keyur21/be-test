@@ -9,7 +9,7 @@ describe('When the user requests the records for a specific payment', () => {
   it('Returns the payment matching their input parameter.', async () => {
     const paymentId = randomUUID();
     const mockPayment = {
-      id: paymentId,
+      paymentId,
       currency: 'AUD',
       amount: 2000,
     };
@@ -68,7 +68,6 @@ describe('When the user requests the records for a specific payment', () => {
     expect(body2.error).toBe('Bad Request');
     expect(body2.message).toContain('Payment ID');
 
-    // Should not call getPayment when ID is missing
     expect(getPaymentMock).not.toHaveBeenCalled();
   });
 
