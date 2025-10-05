@@ -17,8 +17,7 @@
     "type-check": "tsc --noEmit",
     "validate": "npm run type-check && npm run lint && npm run format:check && npm test",
     "cdk": "cdk",
-    "deploy": "cdk deploy --require-approval=never",
-    "prepare": "husky install || true"
+    "deploy": "cdk deploy --require-approval=never"
   },
   "devDependencies": {
     "@types/jest": "29.5.12",
