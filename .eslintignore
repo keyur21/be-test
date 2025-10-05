@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+cdk.out/
+*.js
+*.d.ts
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Config files
+jest.config.js
