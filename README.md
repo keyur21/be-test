@@ -47,3 +47,5 @@ Here are few of the improvements which can be done as next steps:
 - Add Middleware for common logging, error handling, validation
 
 - Lambda logger for structured logs and metrics to integrate with Cloudwatch
+
+- Add github workflow pipeline
